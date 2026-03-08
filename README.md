@@ -30,7 +30,7 @@ git push pg main
 Check what landed:
 
 ```
-psql -U omnigres -d omnigres -c "select sha, message from omni_git.commits_view order by authored_at desc limit 5"
+PGPASSWORD=omnigres psql -U omnigres -d omnigres -h localhost -c "select sha, message from omni_git.commits_view order by authored_at desc limit 5"
 ```
 
 ## Deploy convention
