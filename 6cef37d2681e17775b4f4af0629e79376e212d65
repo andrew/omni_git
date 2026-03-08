@@ -1,0 +1,33 @@
+src/receive_pack.sql
+  095a32fe21027f3b 13-14,34-35,37-40,43-44
+docker-init.sh
+  095a32fe21027f3b 21
+src/pkt_line.sql
+  095a32fe21027f3b 97-101,104,110-113
+migrate/8_http_handlers.sql
+  095a32fe21027f3b 13-34
+README.md
+  095a32fe21027f3b 19
+src/upload_pack.sql
+  095a32fe21027f3b 12-13,35-36,38-41,44-45
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.8",
+  "base_commit_sha": "6cef37d2681e17775b4f4af0629e79376e212d65",
+  "prompts": {
+    "095a32fe21027f3b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b07e714a-3548-4e32-96e3-4ec329e21546",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Andrew Nesbitt <andrewnez@gmail.com>",
+      "messages": [],
+      "total_additions": 57,
+      "total_deletions": 17,
+      "accepted_lines": 56,
+      "overriden_lines": 0
+    }
+  }
+}
