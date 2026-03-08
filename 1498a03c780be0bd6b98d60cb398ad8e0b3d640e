@@ -1,0 +1,37 @@
+omni_git.control
+  095a32fe21027f3b 1-6
+build-sql.sh
+  095a32fe21027f3b 1-35
+Makefile
+  095a32fe21027f3b 1-33
+docker-init.sh
+  095a32fe21027f3b 1-26
+.gitignore
+  095a32fe21027f3b 1-4
+Dockerfile
+  095a32fe21027f3b 1-35
+omni_git.c
+  095a32fe21027f3b 49-51,121
+migrate/8_http_handlers.sql
+  095a32fe21027f3b 3,14
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.8",
+  "base_commit_sha": "1498a03c780be0bd6b98d60cb398ad8e0b3d640e",
+  "prompts": {
+    "095a32fe21027f3b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b07e714a-3548-4e32-96e3-4ec329e21546",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Andrew Nesbitt <andrewnez@gmail.com>",
+      "messages": [],
+      "total_additions": 11,
+      "total_deletions": 11,
+      "accepted_lines": 145,
+      "overriden_lines": 0
+    }
+  }
+}
