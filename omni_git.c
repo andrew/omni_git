@@ -14,7 +14,6 @@
 #include "utils/array.h"
 
 #include <git2.h>
-#include <git2/sys/errors.h>
 #include <zlib.h>
 #include <unistd.h>
 #include <sys/stat.h>
@@ -47,9 +46,9 @@ insert_object(int repo_id, const git_oid *oid, const void *data,
     int32       size_val;
 
     /* Build OID bytea (20 bytes) */
-    oid_bytea = (bytea *) palloc(GIT_OID_SHA1_SIZE + VARHDRSZ);
-    SET_VARSIZE(oid_bytea, GIT_OID_SHA1_SIZE + VARHDRSZ);
-    memcpy(VARDATA(oid_bytea), oid->id, GIT_OID_SHA1_SIZE);
+    oid_bytea = (bytea *) palloc(GIT_OID_RAWSZ + VARHDRSZ);
+    SET_VARSIZE(oid_bytea, GIT_OID_RAWSZ + VARHDRSZ);
+    memcpy(VARDATA(oid_bytea), oid->id, GIT_OID_RAWSZ);
 
     /* Build content bytea */
     content_bytea = (bytea *) palloc(size + VARHDRSZ);
@@ -119,7 +118,7 @@ rmdir_recursive(const char *path)
 {
     char cmd[1280];
     snprintf(cmd, sizeof(cmd), "rm -rf '%s'", path);
-    system(cmd);
+    (void) system(cmd);
 }
 
 PG_FUNCTION_INFO_V1(omni_git_unpack_packfile);

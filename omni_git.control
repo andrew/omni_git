@@ -1,0 +1,6 @@
+comment = 'Git object storage and smart HTTP transport'
+default_version = '0.1.0'
+module_pathname = '$libdir/omni_git'
+schema = omni_git
+relocatable = false
+requires = 'pgcrypto'
