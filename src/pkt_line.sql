@@ -94,18 +94,24 @@ begin
         order by r.name
     loop
         if v_first then
-            v_line := v_ref.hex_oid || ' ' || v_ref.name || E'\0' || v_capabilities || E'\n';
+            v_result := v_result || omni_git.pkt_line(
+                convert_to(v_ref.hex_oid || ' ' || v_ref.name, 'UTF8')
+                || '\x00'::bytea
+                || convert_to(v_capabilities || E'\n', 'UTF8')
+            );
             v_first := false;
         else
-            v_line := v_ref.hex_oid || ' ' || v_ref.name || E'\n';
+            v_result := v_result || omni_git.pkt_line(v_ref.hex_oid || ' ' || v_ref.name || E'\n');
         end if;
-        v_result := v_result || omni_git.pkt_line(v_line);
     end loop;
 
     -- Empty repo: send zero-id with capabilities
     if v_first then
-        v_line := repeat('0', 40) || ' capabilities^{}' || E'\0' || v_capabilities || E'\n';
-        v_result := v_result || omni_git.pkt_line(v_line);
+        v_result := v_result || omni_git.pkt_line(
+            convert_to(repeat('0', 40) || ' capabilities^{}', 'UTF8')
+            || '\x00'::bytea
+            || convert_to(v_capabilities || E'\n', 'UTF8')
+        );
     end if;
 
     v_result := v_result || omni_git.pkt_flush();

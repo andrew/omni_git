@@ -9,6 +9,8 @@ declare
     v_pkt_len integer;
     v_hex text;
     v_line text;
+    v_line_bytes bytea;
+    v_null_pos integer;
 begin
     v_len := octet_length(p_body);
 
@@ -30,13 +32,17 @@ begin
             exit;
         end if;
 
-        v_line := convert_from(substring(p_body from v_pos + 4 for v_pkt_len - 4), 'UTF8');
-        v_line := rtrim(v_line, E'\n');
+        -- Extract line as bytea to handle null bytes safely
+        v_line_bytes := substring(p_body from v_pos + 4 for v_pkt_len - 4);
 
-        -- Strip capabilities from first want line
-        if position(E'\0' in v_line) > 0 then
-            v_line := substring(v_line from 1 for position(E'\0' in v_line) - 1);
+        -- Strip capabilities after null byte
+        v_null_pos := position('\x00'::bytea in v_line_bytes);
+        if v_null_pos > 0 then
+            v_line_bytes := substring(v_line_bytes from 1 for v_null_pos - 1);
         end if;
+
+        v_line := convert_from(v_line_bytes, 'UTF8');
+        v_line := rtrim(v_line, E'\n');
 
         if v_line like 'want %' then
             want_oid := decode(substring(v_line from 6 for 40), 'hex');

@@ -16,7 +16,7 @@ When you `git clone`, the extension collects all reachable objects, generates a 
 
 ```
 docker build -t omni_git .
-docker run --rm -p 5432:5432 -p 8080:8080 omni_git
+docker run --rm -p 5432:5432 -p 8080:8081 omni_git
 ```
 
 Push a repo:
