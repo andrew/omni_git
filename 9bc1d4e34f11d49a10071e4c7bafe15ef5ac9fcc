@@ -1,0 +1,41 @@
+src/deploy.sql
+  095a32fe21027f3b 4,39,47,50,58,92,102,112,118,133,139,154,160,175,180,222
+src/http_handlers.sql
+  095a32fe21027f3b 33,70,105
+omni_git.control
+  095a32fe21027f3b 6
+docker-init.sh
+  095a32fe21027f3b 8,13
+omni_git.c
+  095a32fe21027f3b 35,68,131,335,394
+src/pkt_line.sql
+  095a32fe21027f3b 92
+src/receive_pack.sql
+  095a32fe21027f3b 102
+Dockerfile
+  095a32fe21027f3b 17-19,30-31,35-36
+src/generate_packfile.sql
+  095a32fe21027f3b 28,40,51,65
+README.md
+  095a32fe21027f3b 9,33,63-65,80,93,107,109
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.8",
+  "base_commit_sha": "9bc1d4e34f11d49a10071e4c7bafe15ef5ac9fcc",
+  "prompts": {
+    "095a32fe21027f3b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b07e714a-3548-4e32-96e3-4ec329e21546",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Andrew Nesbitt <andrewnez@gmail.com>",
+      "messages": [],
+      "total_additions": 55,
+      "total_deletions": 49,
+      "accepted_lines": 49,
+      "overriden_lines": 0
+    }
+  }
+}
