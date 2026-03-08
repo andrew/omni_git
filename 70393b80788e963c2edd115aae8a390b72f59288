@@ -1,0 +1,25 @@
+LICENSE
+  095a32fe21027f3b 3
+README.md
+  095a32fe21027f3b 1,3-112
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.8",
+  "base_commit_sha": "70393b80788e963c2edd115aae8a390b72f59288",
+  "prompts": {
+    "095a32fe21027f3b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b07e714a-3548-4e32-96e3-4ec329e21546",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Andrew Nesbitt <andrewnez@gmail.com>",
+      "messages": [],
+      "total_additions": 257,
+      "total_deletions": 12,
+      "accepted_lines": 248,
+      "overriden_lines": 0
+    }
+  }
+}
