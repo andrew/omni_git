@@ -89,7 +89,7 @@ begin
 
     for v_ref in
         select r.name, encode(r.oid, 'hex') as hex_oid
-        from omni_git.refs r
+        from public.refs r
         where r.repo_id = p_repo_id and r.oid is not null
         order by r.name
     loop

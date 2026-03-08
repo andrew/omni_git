@@ -99,7 +99,7 @@ begin
     -- Now apply ref updates
     for v_cmd in select * from omni_git.parse_receive_pack_commands(p_body) loop
         if v_cmd.ref_name is not null then
-            v_ok := omni_git.ref_update(p_repo_id, v_cmd.ref_name, v_cmd.new_oid, v_cmd.old_oid);
+            v_ok := public.git_ref_update(p_repo_id, v_cmd.ref_name, v_cmd.new_oid, v_cmd.old_oid);
 
             if v_ok then
                 v_status_lines := v_status_lines || omni_git.pkt_line('ok ' || v_cmd.ref_name || E'\n');

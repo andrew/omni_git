@@ -30,7 +30,7 @@ begin
         return omni_httpd.http_response(status => 403);
     end if;
 
-    select id into v_repo_id from omni_git.repositories where name = v_repo_name;
+    select id into v_repo_id from public.repositories where name = v_repo_name;
     if v_repo_id is null then
         return omni_httpd.http_response(status => 404);
     end if;
@@ -67,7 +67,7 @@ begin
     end if;
     v_repo_name := v_path_parts[1];
 
-    select id into v_repo_id from omni_git.repositories where name = v_repo_name;
+    select id into v_repo_id from public.repositories where name = v_repo_name;
     if v_repo_id is null then
         return omni_httpd.http_response(status => 404);
     end if;
@@ -102,7 +102,7 @@ begin
     end if;
     v_repo_name := v_path_parts[1];
 
-    select id into v_repo_id from omni_git.repositories where name = v_repo_name;
+    select id into v_repo_id from public.repositories where name = v_repo_name;
     if v_repo_id is null then
         return omni_httpd.http_response(status => 404);
     end if;

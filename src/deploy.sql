@@ -1,7 +1,7 @@
 -- Deployment configuration: which repo/branch to deploy, and how
 create table deploy_config (
     id          serial primary key,
-    repo_id     integer not null references omni_git.repositories(id),
+    repo_id     integer not null references public.repositories(id),
     branch      text not null default 'refs/heads/main',
     deploy_dir  text not null default '', -- subdirectory to deploy from (empty = root)
     active      boolean not null default true,
@@ -36,7 +36,7 @@ declare
     v_blob_content bytea;
 begin
     select content into v_commit_content
-    from omni_git.objects
+    from public.objects
     where repo_id = p_repo_id and oid = p_commit_oid and type = 1;
 
     if v_commit_content is null then
@@ -44,10 +44,10 @@ begin
     end if;
 
     select tree_oid into v_tree_oid
-    from omni_git.commit_parse(v_commit_content);
+    from public.git_commit_parse(v_commit_content);
 
     select t.oid into v_blob_oid
-    from omni_git.ls_tree_r(p_repo_id, v_tree_oid) t
+    from public.git_ls_tree_r(p_repo_id, v_tree_oid) t
     where t.path = p_path and t.obj_type = 'blob';
 
     if v_blob_oid is null then
@@ -55,7 +55,7 @@ begin
     end if;
 
     select content into v_blob_content
-    from omni_git.objects
+    from public.objects
     where repo_id = p_repo_id and oid = v_blob_oid and type = 3;
 
     return convert_from(v_blob_content, 'UTF8');
@@ -89,7 +89,7 @@ begin
     select * into v_config from omni_git.deploy_config where id = p_config_id;
 
     select content into v_commit_content
-    from omni_git.objects
+    from public.objects
     where repo_id = v_config.repo_id and oid = p_commit_oid and type = 1;
 
     if v_commit_content is null then
@@ -99,7 +99,7 @@ begin
     end if;
 
     select tree_oid into v_tree_oid
-    from omni_git.commit_parse(v_commit_content);
+    from public.git_commit_parse(v_commit_content);
 
     v_prefix := v_config.deploy_dir;
     if v_prefix != '' and not v_prefix like '%/' then
@@ -109,13 +109,13 @@ begin
     -- Phase 1: migrations (run in order)
     for v_file in
         select t.path, t.oid
-        from omni_git.ls_tree_r(v_config.repo_id, v_tree_oid) t
+        from public.git_ls_tree_r(v_config.repo_id, v_tree_oid) t
         where t.obj_type = 'blob'
           and t.path like v_prefix || 'deploy/migrate/%.sql'
         order by t.path
     loop
         select convert_from(content, 'UTF8') into v_code
-        from omni_git.objects
+        from public.objects
         where repo_id = v_config.repo_id and oid = v_file.oid and type = 3;
 
         begin
@@ -130,13 +130,13 @@ begin
     -- Phase 2: handler definitions (SQL)
     for v_file in
         select t.path, t.oid
-        from omni_git.ls_tree_r(v_config.repo_id, v_tree_oid) t
+        from public.git_ls_tree_r(v_config.repo_id, v_tree_oid) t
         where t.obj_type = 'blob'
           and t.path like v_prefix || 'deploy/handlers/%.sql'
         order by t.path
     loop
         select convert_from(content, 'UTF8') into v_code
-        from omni_git.objects
+        from public.objects
         where repo_id = v_config.repo_id and oid = v_file.oid and type = 3;
 
         begin
@@ -151,13 +151,13 @@ begin
     -- Phase 3: Python handlers (via omni_python if available)
     for v_file in
         select t.path, t.oid
-        from omni_git.ls_tree_r(v_config.repo_id, v_tree_oid) t
+        from public.git_ls_tree_r(v_config.repo_id, v_tree_oid) t
         where t.obj_type = 'blob'
           and t.path like v_prefix || 'deploy/handlers/%.py'
         order by t.path
     loop
         select convert_from(content, 'UTF8') into v_code
-        from omni_git.objects
+        from public.objects
         where repo_id = v_config.repo_id and oid = v_file.oid and type = 3;
 
         begin
@@ -172,12 +172,12 @@ begin
     -- Phase 4: seed file
     for v_file in
         select t.path, t.oid
-        from omni_git.ls_tree_r(v_config.repo_id, v_tree_oid) t
+        from public.git_ls_tree_r(v_config.repo_id, v_tree_oid) t
         where t.obj_type = 'blob'
           and t.path = v_prefix || 'deploy/seed.sql'
     loop
         select convert_from(content, 'UTF8') into v_code
-        from omni_git.objects
+        from public.objects
         where repo_id = v_config.repo_id and oid = v_file.oid and type = 3;
 
         begin
@@ -219,6 +219,6 @@ end;
 $$;
 
 create trigger deploy_after_ref_update
-    after insert or update on omni_git.refs
+    after insert or update on public.refs
     for each row
     execute function omni_git.deploy_on_ref_update();

@@ -5,12 +5,12 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-'
     CREATE EXTENSION IF NOT EXISTS omni_git CASCADE;
 
     -- Create a demo repository
-    INSERT INTO omni_git.repositories (name) VALUES ('demo')
+    INSERT INTO repositories (name) VALUES ('demo')
     ON CONFLICT DO NOTHING;
 
     -- Set up auto-deploy on push to main
     INSERT INTO omni_git.deploy_config (repo_id, branch)
-    SELECT id, 'refs/heads/main' FROM omni_git.repositories WHERE name = 'demo'
+    SELECT id, 'refs/heads/main' FROM repositories WHERE name = 'demo'
     ON CONFLICT DO NOTHING;
 SQL
 

@@ -1,0 +1,3 @@
+[submodule "gitgres"]
+	path = gitgres
+	url = https://github.com/andrew/gitgres.git

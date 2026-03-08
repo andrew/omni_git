@@ -6,7 +6,7 @@ Built on [gitgres](https://github.com/andrew/gitgres). See [Git in Postgres](htt
 
 ## How it works
 
-Git objects (commits, trees, blobs, tags) live in an `objects` table. Refs live in a `refs` table with compare-and-swap updates. The extension implements the git smart HTTP protocol entirely in SQL, with a C function for packfile unpacking and generation (via libgit2).
+Git objects (commits, trees, blobs, tags) live in gitgres tables (`objects`, `refs`). omni_git adds the git smart HTTP protocol entirely in SQL, with a C function for packfile unpacking and generation (via libgit2).
 
 When you `git push`, the HTTP handler (served by omni_httpd) receives the packfile, unpacks every object into the database, and updates the refs. A trigger on the refs table fires on push to main, walks the git tree to find deployable files, and executes them: SQL files run directly, Python files go through omni_python.
 
@@ -30,7 +30,7 @@ git push pg main
 Check what landed:
 
 ```
-PGPASSWORD=omnigres psql -U omnigres -d omnigres -h localhost -c "select sha, message from omni_git.commits_view order by authored_at desc limit 5"
+PGPASSWORD=omnigres psql -U omnigres -d omnigres -h localhost -c "select sha, message from commits_view order by authored_at desc limit 5"
 ```
 
 ## Deploy convention
@@ -50,25 +50,26 @@ To enable deploy on a repo:
 
 ```sql
 insert into omni_git.deploy_config (repo_id, branch)
-select id, 'refs/heads/main' from omni_git.repositories where name = 'myapp';
+select id, 'refs/heads/main' from repositories where name = 'myapp';
 ```
 
 Deployments are logged in `omni_git.deploy_log` with status, error messages, and file counts.
 
 ## Standalone setup
 
-Requires PostgreSQL 17 with pgcrypto, libgit2, and OpenSSL.
+Requires PostgreSQL 17 with libgit2 and OpenSSL.
 
 ```
-make
-make install
+git submodule update --init
+make -C gitgres/ext && make -C gitgres/ext install
+make && make install
 ```
 
 Then in psql:
 
 ```sql
 create extension omni_git cascade;
-insert into omni_git.repositories (name) values ('myrepo');
+insert into repositories (name) values ('myrepo');
 ```
 
 ## SQL interface
@@ -76,7 +77,7 @@ insert into omni_git.repositories (name) values ('myrepo');
 Write a blob:
 
 ```sql
-select encode(omni_git.object_write(1, 3::smallint, convert_to('hello', 'UTF8')), 'hex');
+select encode(git_object_write(1, 3::smallint, convert_to('hello', 'UTF8')), 'hex');
 ```
 
 Read a file from a commit:
@@ -89,23 +90,23 @@ Walk a tree:
 
 ```sql
 select path, mode, encode(oid, 'hex')
-from omni_git.ls_tree_r(1, decode('abc123...', 'hex'));
+from git_ls_tree_r(1, decode('abc123...', 'hex'));
 ```
 
 Query commits:
 
 ```sql
-refresh materialized view omni_git.commits_view;
+refresh materialized view commits_view;
 select sha, author_name, authored_at, message
-from omni_git.commits_view
+from commits_view
 order by authored_at desc;
 ```
 
 ## What's here
 
-**Ported from gitgres:** object storage with SHA1 hashing, tree and commit parsing, recursive tree walks, ref management with compare-and-swap, materialized views for commits and tree entries.
+**From gitgres (submodule):** object storage with SHA1 hashing, tree and commit parsing, recursive tree walks, ref management with compare-and-swap, materialized views for commits and tree entries.
 
-**New:** git smart HTTP protocol (packet-line encoding in SQL), packfile unpacking and generation (C/libgit2), HTTP handlers for omni_httpd, deploy-on-push trigger system.
+**Added by omni_git:** git smart HTTP protocol (packet-line encoding in SQL), packfile unpacking and generation (C/libgit2), HTTP handlers for omni_httpd, deploy-on-push trigger system.
 
 ## License
 

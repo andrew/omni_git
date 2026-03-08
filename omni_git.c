@@ -32,7 +32,7 @@ _PG_init(void)
     git_libgit2_init();
 }
 
-/* Insert a single object into omni_git.objects via SPI */
+/* Insert a single object into public.objects via SPI */
 static int
 insert_object(int repo_id, const git_oid *oid, const void *data,
               size_t size, git_object_t type)
@@ -65,7 +65,7 @@ insert_object(int repo_id, const git_oid *oid, const void *data,
     values[4] = PointerGetDatum(content_bytea);
 
     ret = SPI_execute_with_args(
-        "INSERT INTO omni_git.objects (repo_id, oid, type, size, content) "
+        "INSERT INTO public.objects (repo_id, oid, type, size, content) "
         "VALUES ($1, $2, $3, $4, $5) "
         "ON CONFLICT (repo_id, oid) DO NOTHING",
         5, argtypes, values, NULL, false, 0);
@@ -128,7 +128,7 @@ PG_FUNCTION_INFO_V1(omni_git_unpack_packfile);
  *
  * Takes raw packfile bytes (the PACK... data that follows the ref commands
  * in a git-receive-pack request), unpacks using libgit2's indexer, and
- * inserts all objects into omni_git.objects. Returns the number of objects
+ * inserts all objects into public.objects. Returns the number of objects
  * unpacked.
  */
 Datum
@@ -332,7 +332,7 @@ PG_FUNCTION_INFO_V1(omni_git_generate_packfile);
 /*
  * generate_packfile(repo_id integer, oids bytea[]) returns bytea
  *
- * Reads the requested objects from omni_git.objects and produces a valid
+ * Reads the requested objects from public.objects and produces a valid
  * git packfile (version 2, no delta compression). Each object is stored
  * as type+size header followed by zlib-compressed raw content.
  */
@@ -391,7 +391,7 @@ omni_git_generate_packfile(PG_FUNCTION_ARGS)
         args[1] = PointerGetDatum(oid_bytea);
 
         ret = SPI_execute_with_args(
-            "SELECT type, size, content FROM omni_git.objects "
+            "SELECT type, size, content FROM public.objects "
             "WHERE repo_id = $1 AND oid = $2",
             2, argtypes, args, NULL, true, 1);
 

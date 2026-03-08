@@ -25,7 +25,7 @@ begin
         v_seen := v_seen || v_commit_oid;
 
         select content into v_content
-        from omni_git.objects o
+        from public.objects o
         where o.repo_id = p_repo_id and o.oid = v_commit_oid and o.type = 1;
 
         if v_content is null then
@@ -37,7 +37,7 @@ begin
 
         -- Get tree OID from commit
         select c.tree_oid into v_tree_oid
-        from omni_git.commit_parse(v_content) c;
+        from public.git_commit_parse(v_content) c;
 
         -- Walk the tree recursively, collecting all objects
         if not (v_tree_oid = any(v_seen)) then
@@ -48,7 +48,7 @@ begin
             -- Collect all tree entries recursively
             for oid in
                 select t.oid
-                from omni_git.ls_tree_r(p_repo_id, v_tree_oid) t
+                from public.git_ls_tree_r(p_repo_id, v_tree_oid) t
                 where not (t.oid = any(v_seen))
             loop
                 v_seen := v_seen || oid;
@@ -62,7 +62,7 @@ begin
             v_parent bytea;
         begin
             select c.parent_oids into v_parents
-            from omni_git.commit_parse(v_content) c;
+            from public.git_commit_parse(v_content) c;
 
             if v_parents is not null then
                 foreach v_parent in array v_parents loop
