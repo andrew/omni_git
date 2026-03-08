@@ -1,0 +1,62 @@
+$schema: "https://raw.githubusercontent.com/omnigres/omnigres/master/pg_yregress/schema.json"
+instance:
+  init:
+  - create extension omni_git cascade
+
+tests:
+
+- name: pkt_line encodes text correctly
+  query: select encode(omni_git.pkt_line('hello'), 'escape') as pkt
+  results:
+  - pkt: 0009hello
+
+- name: pkt_line includes newline in length
+  query: |
+    select encode(omni_git.pkt_line(E'hello\n'), 'escape') as pkt
+  results:
+  - pkt: "000ahello\n"
+
+- name: pkt_flush is 0000
+  query: select encode(omni_git.pkt_flush(), 'escape') as pkt
+  results:
+  - pkt: "0000"
+
+- name: pkt_line_decode round-trips
+  steps:
+  - query: |
+      select convert_from(line, 'UTF8') as line, is_flush
+      from omni_git.pkt_line_decode(
+        omni_git.pkt_line('first line') ||
+        omni_git.pkt_line('second line') ||
+        omni_git.pkt_flush()
+      )
+    results:
+    - line: first line
+      is_flush: false
+    - line: second line
+      is_flush: false
+    - line: null
+      is_flush: true
+
+- name: ref_advertisement for empty repo
+  steps:
+  - query: insert into omni_git.repositories (name) values ('empty') returning id
+    results:
+    - id: 1
+  - query: |
+      select encode(omni_git.ref_advertisement(1, 'git-receive-pack'), 'escape') like '%service=git-receive-pack%' as has_service
+    results:
+    - has_service: true
+
+- name: ref_advertisement includes refs
+  steps:
+  - query: insert into omni_git.repositories (name) values ('with-refs') returning id
+    results:
+    - id: 2
+  - query: |
+      select omni_git.ref_update(2, 'refs/heads/main',
+        decode('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'hex'))
+  - query: |
+      select encode(omni_git.ref_advertisement(2, 'git-receive-pack'), 'escape') like '%refs/heads/main%' as has_ref
+    results:
+    - has_ref: true

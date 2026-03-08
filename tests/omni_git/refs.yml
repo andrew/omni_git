@@ -1,0 +1,62 @@
+$schema: "https://raw.githubusercontent.com/omnigres/omnigres/master/pg_yregress/schema.json"
+instance:
+  init:
+  - create extension omni_git cascade
+  - insert into omni_git.repositories (name) values ('test')
+
+tests:
+
+- name: create new ref
+  steps:
+  - query: |
+      select omni_git.ref_update(1, 'refs/heads/main',
+        decode('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'hex'))
+    results:
+    - ref_update: true
+  - query: select encode(oid, 'hex') as oid from omni_git.refs where repo_id = 1 and name = 'refs/heads/main'
+    results:
+    - oid: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+
+- name: cas update succeeds with correct old oid
+  steps:
+  - query: |
+      select omni_git.ref_update(1, 'refs/heads/cas',
+        decode('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'hex'))
+  - query: |
+      select omni_git.ref_update(1, 'refs/heads/cas',
+        decode('bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'hex'),
+        decode('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'hex'))
+    results:
+    - ref_update: true
+
+- name: cas update fails with wrong old oid
+  steps:
+  - query: |
+      select omni_git.ref_update(1, 'refs/heads/cas2',
+        decode('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'hex'))
+  - query: |
+      select omni_git.ref_update(1, 'refs/heads/cas2',
+        decode('bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'hex'),
+        decode('cccccccccccccccccccccccccccccccccccccccc', 'hex'))
+    results:
+    - ref_update: false
+
+- name: force update bypasses cas
+  steps:
+  - query: |
+      select omni_git.ref_update(1, 'refs/heads/force',
+        decode('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'hex'))
+  - query: |
+      select omni_git.ref_update(1, 'refs/heads/force',
+        decode('bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'hex'),
+        decode('cccccccccccccccccccccccccccccccccccccccc', 'hex'),
+        true)
+    results:
+    - ref_update: true
+
+- name: symbolic ref
+  steps:
+  - query: select omni_git.ref_set_symbolic(1, 'HEAD', 'refs/heads/main')
+  - query: select symbolic from omni_git.refs where repo_id = 1 and name = 'HEAD'
+    results:
+    - symbolic: refs/heads/main

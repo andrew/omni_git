@@ -1,0 +1,36 @@
+$schema: "https://raw.githubusercontent.com/omnigres/omnigres/master/pg_yregress/schema.json"
+instance:
+  init:
+  - create extension omni_git cascade
+  - insert into omni_git.repositories (name) values ('test')
+
+tests:
+
+- name: parse receive-pack command line
+  query: |
+    select
+      encode(old_oid, 'hex') as old_oid,
+      encode(new_oid, 'hex') as new_oid,
+      ref_name
+    from omni_git.parse_receive_pack_commands(
+      omni_git.pkt_line(
+        repeat('0', 40) || ' ' || repeat('a', 40) || ' refs/heads/main' || E'\0report-status\n'
+      ) || omni_git.pkt_flush() || 'PACK'::bytea
+    )
+    where ref_name is not null
+  results:
+  - old_oid: "0000000000000000000000000000000000000000"
+    new_oid: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    ref_name: refs/heads/main
+
+- name: apply receive-pack creates ref
+  steps:
+  - query: |
+      select omni_git.apply_receive_pack(1,
+        omni_git.pkt_line(
+          repeat('0', 40) || ' ' || repeat('a', 40) || ' refs/heads/main' || E'\0report-status\n'
+        ) || omni_git.pkt_flush()
+      )
+  - query: select encode(oid, 'hex') as oid from omni_git.refs where repo_id = 1 and name = 'refs/heads/main'
+    results:
+    - oid: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa

@@ -1,0 +1,68 @@
+$schema: "https://raw.githubusercontent.com/omnigres/omnigres/master/pg_yregress/schema.json"
+instance:
+  init:
+  - create extension omni_git cascade
+
+tests:
+
+- name: read_blob_at_commit returns file content
+  steps:
+  - query: insert into omni_git.repositories (name) values ('deploy-test') returning id
+    results:
+    - id: 1
+  # Write a blob
+  - query: |
+      select encode(omni_git.object_write(1, 3::smallint, convert_to('select 1', 'UTF8')), 'hex') as blob_oid
+  # Write a tree containing the blob (manually constructed binary tree entry)
+  # Tree entry: "100644 test.sql\0<20-byte-oid>"
+  - name: write tree and commit
+    steps:
+    - query: |
+        with blob as (
+          select omni_git.object_write(1, 3::smallint, convert_to('select 1', 'UTF8')) as oid
+        ),
+        tree_content as (
+          select convert_to('100644 deploy/handlers/test.sql', 'UTF8') || '\x00'::bytea || oid as content
+          from blob
+        ),
+        tree as (
+          select omni_git.object_write(1, 2::smallint, content) as oid from tree_content
+        ),
+        commit_content as (
+          select convert_to(
+            'tree ' || encode(tree.oid, 'hex') || E'\n' ||
+            'author Test <test@test.com> 1000000000 +0000' || E'\n' ||
+            'committer Test <test@test.com> 1000000000 +0000' || E'\n\n' ||
+            'test commit', 'UTF8') as content
+          from tree
+        )
+        select encode(omni_git.object_write(1, 1::smallint, content), 'hex') as commit_oid
+        from commit_content
+
+- name: deploy_config table exists
+  query: |
+    select column_name from information_schema.columns
+    where table_schema = 'omni_git' and table_name = 'deploy_config'
+    order by ordinal_position
+  results:
+  - column_name: id
+  - column_name: repo_id
+  - column_name: branch
+  - column_name: deploy_dir
+  - column_name: active
+  - column_name: created_at
+
+- name: deploy_log table exists
+  query: |
+    select column_name from information_schema.columns
+    where table_schema = 'omni_git' and table_name = 'deploy_log'
+    order by ordinal_position
+  results:
+  - column_name: id
+  - column_name: config_id
+  - column_name: commit_oid
+  - column_name: commit_sha
+  - column_name: status
+  - column_name: message
+  - column_name: files_deployed
+  - column_name: deployed_at

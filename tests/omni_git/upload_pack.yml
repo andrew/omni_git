@@ -1,0 +1,68 @@
+$schema: "https://raw.githubusercontent.com/omnigres/omnigres/master/pg_yregress/schema.json"
+instance:
+  init:
+  - create extension omni_git cascade
+
+tests:
+
+- name: parse upload-pack want line
+  query: |
+    select encode(want_oid, 'hex') as want_oid, have_oid
+    from omni_git.parse_upload_pack_request(
+      omni_git.pkt_line('want ' || repeat('a', 40) || E'\0multi_ack\n')
+      || omni_git.pkt_flush()
+    )
+    where want_oid is not null
+  results:
+  - want_oid: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    have_oid: null
+
+- name: parse upload-pack want and have lines
+  query: |
+    select
+      encode(want_oid, 'hex') as want,
+      encode(have_oid, 'hex') as have
+    from omni_git.parse_upload_pack_request(
+      omni_git.pkt_line('want ' || repeat('a', 40) || E'\n')
+      || omni_git.pkt_flush()
+      || omni_git.pkt_line('have ' || repeat('b', 40) || E'\n')
+      || omni_git.pkt_flush()
+    )
+  results:
+  - want: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    have: null
+  - want: null
+    have: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+
+- name: reachable_objects finds blob from commit
+  steps:
+  - query: insert into omni_git.repositories (name) values ('reachable-test') returning id
+    results:
+    - id: 1
+  - query: |
+      select omni_git.object_write(1, 3::smallint, convert_to('hello', 'UTF8')) as blob_oid
+  - query: |
+      with blob as (
+        select omni_git.object_write(1, 3::smallint, convert_to('hello', 'UTF8')) as oid
+      ),
+      tree_content as (
+        select convert_to('100644 hello.txt', 'UTF8') || '\x00'::bytea || oid as content
+        from blob
+      ),
+      tree as (
+        select omni_git.object_write(1, 2::smallint, content) as oid from tree_content
+      ),
+      commit_content as (
+        select convert_to(
+          'tree ' || encode(tree.oid, 'hex') || E'\n' ||
+          'author Test <t@t.com> 1000000000 +0000' || E'\n' ||
+          'committer Test <t@t.com> 1000000000 +0000' || E'\n\n' ||
+          'init', 'UTF8') as content
+        from tree
+      ),
+      written_commit as (
+        select omni_git.object_write(1, 1::smallint, content) as oid from commit_content
+      )
+      select count(*) from omni_git.reachable_objects(1, array[(select oid from written_commit)])
+    results:
+    - count: 3
